@@ -6,9 +6,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates
 VOLUME /opt/mirth-connect/appdata
 
 RUN cd /tmp
-RUN wget http://downloads.mirthcorp.com/connect/$MIRTH_CONNECT_VERSION/mirthconnect-$MIRTH_CONNECT_VERSION-unix.tar.gz &
-RUN tar xvzf mirthconnect-$MIRTH_CONNECT_VERSION-unix.tar.gz
-RUN rm -f mirthconnect-$MIRTH_CONNECT_VERSION-unix.tar.gz
+RUN wget http://downloads.mirthcorp.com/connect/3.3.1.7856.b91/mirthconnect-3.3.1.7856.b91-unix.tar.gz
+RUN rm -f mirthconnect-3.3.1.7856.b91-unix.tar.gz
 RUN mv Mirth\ Connect/* /opt/mirth-connect/
 RUN chown -R mirth /opt/mirth-connect
 
