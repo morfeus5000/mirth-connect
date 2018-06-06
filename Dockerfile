@@ -1,41 +1,32 @@
-# See https://github.com/brandonstevens/mirth-connect-docker
-FROM java:8
+FROM java
 
-ENV MIRTHCONNECT_VERSION 3.5.0.8232.b2153
-ENV MIRTHCONNECT_SHA1SUM 0550d00905ea7161a47d78cedbae35699a5f1b67
+ENV MIRTH_CONNECT_VERSION 3.3.1.7856.b91
 
-# Install NGiNX
-RUN apt-get update && apt-get install -y --no-install-recommends nginx && \
-  rm -rf /var/lib/apt/lists/*
-RUN rm -f /etc/nginx/sites-enabled/default
+RUN useradd -u 1000 mirth
 
-# Install Mirth Connect
-RUN cd /tmp && \
-  wget https://s3.amazonaws.com/downloads.mirthcorp.com/connect/$MIRTHCONNECT_VERSION/mirthconnect-$MIRTHCONNECT_VERSION-unix.tar.gz && \
-  echo "$MIRTHCONNECT_SHA1SUM" mirthconnect-$MIRTHCONNECT_VERSION-unix.tar.gz | sha1sum -c && \
-  tar xvzf mirthconnect-$MIRTHCONNECT_VERSION-unix.tar.gz && \
-  rm -f mirthconnect-$MIRTHCONNECT_VERSION-unix.tar.gz && \
-  mkdir -p /opt/mirthconnect && \
-  mv Mirth\ Connect/* /opt/mirthconnect/ && \
-  mkdir -p /opt/mirthconnect/appdata
-WORKDIR /opt/mirthconnect
+RUN gpg --keyserver pool.sks-keyservers.net --recv-keys B42F6819007F00F88E364FD4036A9C25BF357DD4
+RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates wget && rm -rf /var/lib/apt/lists/* \
+	&& wget -O /usr/local/bin/gosu "https://github.com/tianon/gosu/releases/download/1.2/gosu-$(dpkg --print-architecture)" \
+	&& wget -O /usr/local/bin/gosu.asc "https://github.com/tianon/gosu/releases/download/1.2/gosu-$(dpkg --print-architecture).asc" \
+	&& gpg --verify /usr/local/bin/gosu.asc \
+	&& rm /usr/local/bin/gosu.asc \
+	&& chmod +x /usr/local/bin/gosu
 
-# Install nc (in order to determine when Mirth Connect is listening)
-RUN apt-get update && apt-get install -y netcat && \
-  rm -rf /var/lib/apt/lists/*
+VOLUME /opt/mirth-connect/appdata
 
-COPY templates/conf/mirth.properties /opt/mirthconnect/conf/mirth.properties
+RUN \
+  cd /tmp && \
+  wget http://downloads.mirthcorp.com/connect/$MIRTH_CONNECT_VERSION/mirthconnect-$MIRTH_CONNECT_VERSION-unix.tar.gz && \
+  tar xvzf mirthconnect-$MIRTH_CONNECT_VERSION-unix.tar.gz && \
+  rm -f mirthconnect-$MIRTH_CONNECT_VERSION-unix.tar.gz && \
+  mv Mirth\ Connect/* /opt/mirth-connect/ && \
+  chown -R mirth /opt/mirth-connect
 
-# NGiNX (X-Forwarded-Proto Proxy)
-EXPOSE 3000
+WORKDIR /opt/mirth-connect
 
-# Mirth (Direct)
-EXPOSE 80 443
+EXPOSE 8080 8443
 
-# 10 unmapped channels
-EXPOSE 9661-9670
+COPY docker-entrypoint.sh /
+ENTRYPOINT ["/docker-entrypoint.sh"]
 
-COPY templates/etc /etc
-COPY templates/bin /usr/local/bin
-
-CMD ["/usr/local/bin/mirthconnect-wrapper.sh"]
+CMD ["java", "-jar", "mirth-server-launcher.jar"]
