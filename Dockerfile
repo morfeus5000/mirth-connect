@@ -17,7 +17,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates
   && chmod +x /usr/local/bin/gosu
 
 VOLUME /opt/mirth-connect/appdata
-VOLUME /opt/mirth-connect/conf
 
 RUN \
   cd /tmp && \
